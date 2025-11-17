@@ -135,13 +135,13 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 #check if environment exists or create one
 
-if [ ! -d dipper2 ]; then
-    "$default_python" -m venv dipper2
-fi
+# if [ ! -d dipper2 ]; then
+#     "$default_python" -m venv dipper2
+# fi
 
-dipper2/bin/pip install --upgrade pip
-dipper2/bin/pip install -r "$PARENT_DIR"/requirements.txt
-source dipper2/bin/activate
+# dipper2/bin/pip install --upgrade pip
+# dipper2/bin/pip install -r "$PARENT_DIR"/requirements.txt
+# source dipper2/bin/activate
 
 # Shift into assembly folder
 cd "$ASSEM_F" || exit 1
@@ -189,7 +189,7 @@ echo "Finished running FUR"
 echo "Pick primers using Primer3"
 convPCR="primMinTm=58 primOptTm=60 primMaxTm=62 inMinTm=63 inOptTm=65 inMaxTm=67 prodMinSize=200 prodMaxSize=1000 Oligo=0"
 if [[ -n $OUT && -n $P3 && $QPCR == "y" ]]; then
-    "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -o "$OUT" -p "$P3" -q "$QCPR" && true
+    "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -o "$OUT" -p "$P3" -q "$QPCR" && true
     EXIT_STATUS="$?"
 elif [[ -n $OUT && -n $P3 ]]; then
     "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -o "$OUT" -p "$P3"&& true
@@ -207,7 +207,7 @@ elif [[ -n $P3 ]]; then
     "$default_python"  "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -p "$P3"&& true
     EXIT_STATUS="$?"
 elif [[ $QPCR == "y" ]]; then
-    "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -q "$QCPR"&& true
+    "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -q "$QPCR"&& true
     EXIT_STATUS="$?"
 else
     "$default_python" "$SCRIPT_DIR"/Primer3_module_optimized.py -f "$FOLD" -p "$convPCR"&& true
