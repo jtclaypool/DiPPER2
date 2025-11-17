@@ -37,13 +37,13 @@ def main():
     parent_dir = script_dir.parent
 
     #check if environment exists, otherwise create
-    if not Path("dipper2").exists():
-        run_command(["python3", "-m", "venv", "dipper2"])
+    # if not Path("dipper2").exists():
+    #     run_command(["python3", "-m", "venv", "dipper2"])
 
-    run_command(["dipper2/bin/pip", "install", "--upgrade", "pip"])
-    run_command(["dipper2/bin/pip", "install", "-r", str(parent_dir / "requirements.txt")])
+    # run_command(["dipper2/bin/pip", "install", "--upgrade", "pip"])
+    # run_command(["dipper2/bin/pip", "install", "-r", str(parent_dir / "requirements.txt")])
     
-    python_env= script_dir / "dipper2/bin/python3"
+    # python_env= script_dir / "dipper2/bin/python3"
 
     #change to folder with assemblies
     os.chdir(args.assem_f)
