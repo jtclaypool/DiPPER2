@@ -1,5 +1,6 @@
 #! /usr/bin/python
 
+import os
 import sys
 import argparse
 import shutil
@@ -7,7 +8,7 @@ import subprocess
 from pathlib import Path
 from logging_handler import Logger
 
-def parse_list(targets_file: Path, logger: Logger)-> list:
+def parse_list(targets_file: Path,assembly_directory: Path, logger: Logger)-> list:
     """
     Parse the list of targets from a file.
 
@@ -22,7 +23,7 @@ def parse_list(targets_file: Path, logger: Logger)-> list:
     """
     try:
         with open(targets_file, 'r',encoding="utf-8") as file:
-            return [line.split('\t')[0].split('.')[0] for line in file]
+            return [Path(assembly_directory,line.split('\t')[0].split('.')[0]) for line in file]
     except FileNotFoundError as e:
         logger.exception(f"Error: Target file '{targets_file}' not found!: {e}")
         raise FileNotFoundError(f"Error: Target file '{targets_file}' not found!: {e}") from e
@@ -44,7 +45,7 @@ def process_target_files(list_targets: list, source_folder:Path, fur_target_fold
         RunTimeError
     """
     for accession in list_targets:
-        accession_pattern = accession.strip() + "*"
+        accession_pattern = os.path.basename(accession).strip() + "*"
         try:
             result = subprocess.run(['find', str(source_folder), '-maxdepth', '1', '-type', 'f', '-iname', accession_pattern], capture_output=True, text=True, check=True)
             filename = result.stdout.strip()
@@ -95,6 +96,7 @@ def main():
     parser = argparse.ArgumentParser(prog='Dipper2',description='Target and Neighbour Folder Sorting', epilog="Bugs, suggestions, criticism, cake, capybaras and praise to t.wacker2@exeter.ac.uk")
     parser.add_argument('-t', '--target', type=str, required=True, help='Please add target list')
     parser.add_argument('-f', '--folder', type=str, required=True, help='Results folder name, which will include the FUR.target and FUR.neighbour subfolders')
+    parser.add_argument("-d", "--assem_f", required=True, help="Assemblies folder")
     parser.add_argument('-v', '--version', action='version', version='%(prog)s 1.1.0')
     parser.add_argument(
             "-V", "--verbose", action="store_true", help="increase logging verbosity"
@@ -102,16 +104,18 @@ def main():
 
     args = parser.parse_args()
 
-    # Define source folder
-    source_folder = Path.cwd()
     
     # configures the logger
     module_name = Path(__file__).name
-    logger_instance = Logger(module_name, source_folder, args.verbose)
+    logger_instance = Logger(module_name, Path(args.folder), args.verbose)
     logger = logger_instance.get_logger()
+    
+    
+    # Define source folder
+    source_folder = Path(args.assem_f)
 
     #parse file with accessions to list
-    list_targets = parse_list(args.target, logger)
+    list_targets = parse_list(args.target, args.assem_f, logger)
     dist_folder = Path(args.folder)
     
     # Make directories in the parent folder
