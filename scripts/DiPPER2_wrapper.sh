@@ -130,9 +130,12 @@ fi
 # Get the script directory:
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
+# Get the current directory
+CURRENT_DIR=$(pwd)
+
 # get the parent of the script directory
 
-PARENT_DIR="$(dirname "$SCRIPT_DIR")"
+PARENT_DIR="$(dirname "${SCRIPT_DIR}")"
 #check if environment exists or create one
 
 # if [ ! -d dipper2 ]; then
@@ -144,11 +147,11 @@ PARENT_DIR="$(dirname "$SCRIPT_DIR")"
 # source dipper2/bin/activate
 
 # Shift into assembly folder
-cd "$ASSEM_F" || exit 1
+# cd "$ASSEM_F" || exit 1
 
 # Shift all the files into target and neighbour folders
 echo "Shifting all the target assemblies into FUR.target and all the neighbours into FUR.neighbour folders"
-"$default_python" "$SCRIPT_DIR"/target_move_module_optimized.py -t "$TARGET" -f "$FOLD"
+"$default_python" "${SCRIPT_DIR}"/target_move_module_optimized.py -t "${CURRENT_DIR}/${TARGET}" -f "${CURRENT_DIR}/${FOLD}" -d "${CURRENT_DIR}/${ASSEM_F}"
 
 # Run FUR
 echo "Running FUR"
