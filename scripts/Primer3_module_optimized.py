@@ -212,7 +212,7 @@ def main():
     logger.info("Starting the Primer3 module...")
 
     # change into the folder
-    os.chdir(source_folder)
+    # os.chdir(source_folder)
 
     # looks for all FUR.db.out.txt files, but should only find one. However, it should not find none.
     try:
