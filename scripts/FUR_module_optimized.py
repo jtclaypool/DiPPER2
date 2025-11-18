@@ -1,5 +1,6 @@
 #!/usr/bin/python
 
+import os
 import sys
 import argparse
 import subprocess
@@ -68,7 +69,7 @@ def run_fur(option: str, outfile_prefix: str, source: Path, logger: Logger):
         RunTimeError
     """
     option_flag = f"-{option.strip()}" if option.strip() else ""
-    fur_out = source / f"{outfile_prefix}_FUR.db.out.txt"
+    fur_out = source / f"{os.path.basename(outfile_prefix).strip()}_FUR.db.out.txt"
     fur_db = source / 'FUR.db'
     try:
         logger.info("Running FUR.")
