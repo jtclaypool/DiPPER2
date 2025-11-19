@@ -12,50 +12,49 @@ from fur2primer3 import remap_keys, write_result, args_to_dict
 from logging_handler import Logger
 
 
-def parse_primers(file_name: str, logger: Logger) -> list:
-    """
-    Parse the primer penalties from the file and return the top lines.
+# def parse_primers(file_name: str, logger: Logger) -> list:
+#     """
+#     Parse the primer penalties from the file and return the top lines.
 
-    Args:
-        file_name (str): the file name of the primer3 output
+#     Args:
+#         file_name (str): the file name of the primer3 output
 
-    Returns:
-        sorted_lines (list): the first 4 elements of a list of penalty sorted incrementally
-    """
-    with open(file_name, "r", encoding="utf-8") as file:
-        lines = file.readlines()
+#     Returns:
+#         sorted_lines (list): the first 4 elements of a list of penalty sorted incrementally
+#     """
+#     with open(file_name, "r", encoding="utf-8") as file:
+#         lines = file.readlines()
 
-    # if line with PRIMER_PAIR_0_PENALTY is found, put in list
-    filtered_lines = [line for line in lines if "PRIMER_PAIR_0_PENALTY" in line]
+#     # if line with PRIMER_PAIR_0_PENALTY is found, put in list
+#     filtered_lines = [line for line in lines if "PRIMER_PAIR_0_PENALTY" in line]
+#     # This line processes each line in 'filtered_lines' by stripping whitespace and splitting 
+#     # it into two parts at the first occurrence of the '=' symbol. The result is a list of lists,
+#     # where each sublist contains the parts of the line before and after the '='. The regular 
+#     # expression 'r"\s*=\s*"' ensures that any surrounding whitespace around the '=' is ignored.
+#     split_lines = [re.split(r"\s*=\s*", line.strip()) for line in filtered_lines]
 
-    # This line processes each line in 'filtered_lines' by stripping whitespace and splitting 
-    # it into two parts at the first occurrence of the '=' symbol. The result is a list of lists,
-    # where each sublist contains the parts of the line before and after the '='. The regular 
-    # expression 'r"\s*=\s*"' ensures that any surrounding whitespace around the '=' is ignored.
-    split_lines = [re.split(r"\s*=\s*", line.strip()) for line in filtered_lines]
+#     try:
+#         # Attempt to sort 'split_lines' by the second element in each sublist (x[1]), converting it to a float
+#         sorted_lines = sorted(split_lines, key=lambda x: float(x[1]))
+#     except ValueError as e:
+#         # If a ValueError occurs during sorting (e.g., non-numeric data), log the error with exception info
+#         logger.exception("Error in sorting lines", exc_info=1)
+#         # Raise a new ValueError, preserving the original exception details
+#         raise ValueError(f"Error in sorting lines: {e}") from e
 
-    try:
-        # Attempt to sort 'split_lines' by the second element in each sublist (x[1]), converting it to a float
-        sorted_lines = sorted(split_lines, key=lambda x: float(x[1]))
-    except ValueError as e:
-        # If a ValueError occurs during sorting (e.g., non-numeric data), log the error with exception info
-        logger.exception("Error in sorting lines", exc_info=1)
-        # Raise a new ValueError, preserving the original exception details
-        raise ValueError(f"Error in sorting lines: {e}") from e
+#     # If the sorted list is empty, log an error indicating no primers were found
+#     if not sorted_lines:
+#         logger.error("Error: No primers found in file")
+#         # Raise an exception because no valid data was found to return
+#         raise Exception("Error: No primers found in file")
 
-    # If the sorted list is empty, log an error indicating no primers were found
-    if not sorted_lines:
-        logger.error("Error: No primers found in file")
-        # Raise an exception because no valid data was found to return
-        raise Exception("Error: No primers found in file")
-
-    # Return the first 4 items from the sorted list
-    return sorted_lines[:4]
+#     # Return the first 4 items from the sorted list
+#     return sorted_lines[:4]
 
 
 
 def find_and_return_following_lines_and_target(
-    file_name: str, top_lines: list, qpcr: str
+    file_name: str, qpcr: str
 ) -> dict:
     """
     Find the primer penalty and return following lines aka primers and targets for the top primer penalties.
@@ -73,86 +72,146 @@ def find_and_return_following_lines_and_target(
 
     with open(file_name, "r", encoding="utf-8") as file:
         lines = file.readlines()
-
-    # Iterate over each 'top_line' in 'top_lines'
-    for top_line in top_lines:
-        # Join the elements of 'top_line' with an equals sign ('=') between them
-        joined_top_line = "=".join(top_line)
+    
+    i=0
+    subprimer=None
+    primer_dict = {}
+    primer_dict[i] = {}
+    primer_header = {}
+    penalties = []
+    for line in lines:
+        data=line.strip().split("=")
+        # if data[0] == "SEQUENCE_TEMPLATE":
+        #     continue
+        if data[0]==data[1]: #detect "=" sign split between primers
+            i+=1
+            primer_dict[i] = {}
+            primer_header = {}
+            subprimer=None
+            continue
         
-        # Check if 'qpcr' is equal to 'y' (yes) to determine the flow of processing
-        if qpcr == "y":
-            # Iterate over the 'lines' list and enumerate them to get both index and content
-            for i, line in enumerate(lines):
-                # If the 'joined_top_line' is found in the current line
-                if joined_top_line in line:
-                    # Retrieve the target sequence from 5 lines above the current one
-                    target_sequence = lines[i - 5].strip()
-                    # Extract primer sequences from lines 4 to 6 after the current line
-                    primer_sequences = [
-                        lines[i + j].strip() for j in range(4, 7) if i + j < len(lines)
-                    ]
-                    # Extract additional primer data from lines 7 to 29 after the current line
-                    primer_data = [
-                        lines[i + j].strip() for j in range(7, 30) if i + j < len(lines)
-                    ]
-                    # Store the found data in the 'found_data' dictionary with dynamic keys
-                    found_data[f"Target_{i}"] = target_sequence
-                    found_data[f"Primer_{i}"] = primer_sequences
-                    found_data[f"Data_primer_{i}"] = primer_data
-        else:
-            # If 'qpcr' is not 'y', follow a different data extraction process that takes care of the 
-            # fact that internal probe is not part of primer3 output. Set to NA instead. 
-            for i, line in enumerate(lines):
-                # If the 'joined_top_line' is found in the current line
-                if joined_top_line in line:
-                    # Retrieve the target sequence from 5 lines above the current one
-                    target_sequence = lines[i - 5].strip()
-                    # Extract primer sequences from lines 3 to 4 after the current line
-                    primer_sequences = [
-                        lines[i + j].strip() for j in range(3, 5) if i + j < len(lines)
-                    ]
-                    # Append a placeholder for a missing primer sequence when 'qpcr' is not 'y'
-                    primer_sequences.append("PRIMER_INTERNAL_0_SEQUENCE=NA")
-                    # Extract additional primer data from lines 5 to 21 after the current line
-                    primer_data = [
-                        lines[i + j].strip() for j in range(5, 22) if i + j < len(lines)
-                    ]
-                    # Store the found data in the 'found_data' dictionary with dynamic keys
-                    found_data[f"Target_{i}"] = target_sequence
-                    found_data[f"Primer_{i}"] = primer_sequences
-                    found_data[f"Data_primer_{i}"] = primer_data
+        if subprimer is None:
+            primer_header[data[0]] = data[1]
+            if data[0] == "PRIMER_PAIR_NUM_RETURNED":
+                subprimer = '0'
+                primer_dict[i][f'subprimer_{subprimer}']={k:v for k,v in primer_header.items()}
+                primer_dict[i][f'subprimer_{subprimer}']['subprimer'] = subprimer
+            continue
+        if subprimer != data[0].split("_")[2]:
+            subprimer = data[0].split("_")[2]
+            primer_dict[i][f'subprimer_{subprimer}']={k:v for k,v in primer_header.items()}
+            primer_dict[i][f'subprimer_{subprimer}']['subprimer'] = subprimer
+
+        if f'_{subprimer}_' in data[0]:
+            primer_dict[i][f'subprimer_{subprimer}'][data[0]]=data[1]
+        if f"PRIMER_PAIR_{subprimer}_PENALTY" in data[0]:       
+            penalties.append(float(data[1]))
+
+    # print(primer_header)
+    del primer_dict[i]
+    top_4_penalties = sorted(list(set(penalties)))[:4]
+
+        
+    print(f'The top 4 penalties are : {top_4_penalties}')
+    
+    top_4_dict ={}
+    for primer,details in primer_dict.items():
+        #print(primer)
+        for sub_primer, primer_details in details.items():
+            if 'subprimer_' in sub_primer:
+                for header, values in primer_details.items():
+                    if "_PENALTY" in header:
+                        if float(values) in top_4_penalties:
+                            print(primer,sub_primer,primer_details['subprimer'])
+                            top_4_dict[f"{primer}_{primer_details['subprimer']}"] = primer_details
+
+    found_data['targets'] ={}
+    found_data['primers'] = {}
+    found_data['data'] = {}
+    
+    for k,v in top_4_dict.items():
+        found_data['targets'][f"Target_{k}"] = v['SEQUENCE_TEMPLATE']
+        found_data['primers'][f"Primer_{k}"] = {'LEFT':v[f"PRIMER_LEFT_{v['subprimer']}_SEQUENCE"],'RIGHT':v[f"PRIMER_RIGHT_{v['subprimer']}_SEQUENCE"]}
+        found_data['data'][f"Data_primer_{k}"] = {header:value for header,value in v.items()}
+    # Iterate over each 'top_line' in 'top_lines'
+    # for top_line in top_lines:
+    #     # Join the elements of 'top_line' with an equals sign ('=') between them
+    #     joined_top_line = "=".join(top_line)
+        
+    #     # Check if 'qpcr' is equal to 'y' (yes) to determine the flow of processing
+    #     if qpcr == "y":
+    #         # Iterate over the 'lines' list and enumerate them to get both index and content
+    #         for i, line in enumerate(lines):
+    #             # If the 'joined_top_line' is found in the current line
+    #             if joined_top_line in line:
+    #                 # Retrieve the target sequence from 5 lines above the current one
+    #                 target_sequence = lines[i - 5].strip()
+    #                 # Extract primer sequences from lines 4 to 6 after the current line
+    #                 primer_sequences = [
+    #                     lines[i + j].strip() for j in range(4, 7) if i + j < len(lines)
+    #                 ]
+    #                 # Extract additional primer data from lines 7 to 29 after the current line
+    #                 primer_data = [
+    #                     lines[i + j].strip() for j in range(7, 30) if i + j < len(lines)
+    #                 ]
+    #                 # Store the found data in the 'found_data' dictionary with dynamic keys
+    #                 found_data[f"Target_{i}"] = target_sequence
+    #                 found_data[f"Primer_{i}"] = primer_sequences
+    #                 found_data[f"Data_primer_{i}"] = primer_data
+        # else:
+        #     # If 'qpcr' is not 'y', follow a different data extraction process that takes care of the 
+        #     # fact that internal probe is not part of primer3 output. Set to NA instead. 
+        #     for i, line in enumerate(lines):
+        #         # If the 'joined_top_line' is found in the current line
+        #         if joined_top_line in line:
+        #             # Retrieve the target sequence from 5 lines above the current one
+        #             target_sequence = lines[i - 5].strip()
+        #             # Extract primer sequences from lines 3 to 4 after the current line
+        #             primer_sequences = [
+        #                 lines[i + j].strip() for j in range(3, 5) if i + j < len(lines)
+        #             ]
+        #             # Append a placeholder for a missing primer sequence when 'qpcr' is not 'y'
+        #             primer_sequences.append("PRIMER_INTERNAL_0_SEQUENCE=NA")
+        #             # Extract additional primer data from lines 5 to 21 after the current line
+        #             primer_data = [
+        #                 lines[i + j].strip() for j in range(5, 22) if i + j < len(lines)
+        #             ]
+        #             # Store the found data in the 'found_data' dictionary with dynamic keys
+        #             found_data[f"Target_{i}"] = target_sequence
+        #             found_data[f"Primer_{i}"] = primer_sequences
+        #             found_data[f"Data_primer_{i}"] = primer_data
 
     # Return the 'found_data' dictionary containing all the extracted information
     return found_data
 
 
-def move_files(source_folder: Path, destination_folder: Path, pattern: str, logger: Logger) -> None:
-    """
-    Move files matching pattern from source_folder to destination_folder.
+# def move_files(source_folder: Path, destination_folder: Path, pattern: str, logger: Logger) -> None:
+#     """
+#     Move files matching pattern from source_folder to destination_folder.
 
-    Args:
-        source_folder (Path): Path object containing the files that are supposed to be moved into the destination folder
-        destination_folder (Path): Path object the files are supposed to be shifted to
-        pattern (str): pattern to be matched to identify which files from the source folder go into the destination folder
+#     Args:
+#         source_folder (Path): Path object containing the files that are supposed to be moved into the destination folder
+#         destination_folder (Path): Path object the files are supposed to be shifted to
+#         pattern (str): pattern to be matched to identify which files from the source folder go into the destination folder
 
-    Returns:
-        None
-    """
-    files = list(source_folder.glob(pattern)) 
-    if not files:
-        logger.exception(f"No files matching {pattern} found in {source_folder}")
-        raise FileNotFoundError(f"No files matching {pattern} found in {source_folder}")
+#     Returns:
+#         None
+#     """
+#     files = list(source_folder.glob(pattern)) 
+#     if not files:
+#         logger.exception(f"No files matching {pattern} found in {source_folder}")
+#         raise FileNotFoundError(f"No files matching {pattern} found in {source_folder}")
 
-    for file in files:
-        try:
-            shutil.move(file, destination_folder / file.name)
-            logger.info(f"Moved {file} to {destination_folder}")
-        except FileNotFoundError as e:
-            logger.exception("Error moving files", exc_info=1)
-            raise FileNotFoundError(f"Error moving files: {e}") from e
-        except OSError as e:
-            logger.exception(f"OS error during moving files with shutil.move: {e}")
-            raise OSError("OS error during shutil.move") from e
+#     for file in files:
+        # try:
+        #     shutil.move(file, destination_folder / file.name)
+        #     logger.info(f"Moved {file} to {destination_folder}")
+        # except FileNotFoundError as e:
+        #     logger.exception("Error moving files", exc_info=1)
+        #     raise FileNotFoundError(f"Error moving files: {e}") from e
+        # except OSError as e:
+        #     logger.exception(f"OS error during moving files with shutil.move: {e}")
+        #     raise OSError("OS error during shutil.move") from e
 
 def main():
     """
@@ -276,25 +335,26 @@ def main():
         sys.exit()
 
     # try running primer3_core, write it to file, check if the file exists and/or is empty. If so,
-    try:
-        logger.info("Running primer3_core.")
-        primer3 = subprocess.run(
-            ["primer3_core", str(resultf2p)], check=True, capture_output=True, text=True
-        )
-    except subprocess.CalledProcessError as e:
-        logger.error("Primer 3 did not run successfully.", exc_info=1)
-        raise subprocess.CalledProcessError(
-            e.returncode, e.cmd, output=e.output, stderr=e.stderr
-        ) from e
+    print("Josh also needs to uncomment this")
+    # try:
+    #     logger.info("Running primer3_core.")
+    #     primer3 = subprocess.run(
+    #         ["primer3_core", str(resultf2p)], check=True, capture_output=True, text=True
+    #     )
+    # except subprocess.CalledProcessError as e:
+    #     logger.error("Primer 3 did not run successfully.", exc_info=1)
+    #     raise subprocess.CalledProcessError(
+    #         e.returncode, e.cmd, output=e.output, stderr=e.stderr
+    #     ) from e
 
     # write the resulyts of the primer3 run to a file
     resultp3 = resultf2p.with_suffix(".primer3_out.txt")
-    resultp3.write_text(primer3.stdout.strip(), encoding="utf-8")
+    # resultp3.write_text(primer3.stdout.strip(), encoding="utf-8")
 
     # complain about no results and raise exception
     if not resultp3.exists() or resultp3.stat().st_size == 0:
         logger.error(
-            "Primer3 did not manage to generate primers or did not run successfully. {resultp3} does not exist or is empty.",
+            f"Primer3 did not manage to generate primers or did not run successfully. {resultp3} does not exist or is empty.",
             exc_info=1,
         )
         raise FileExistsError(
@@ -302,17 +362,18 @@ def main():
         )
 
     # parse primer3 output and find the 4 lowest penalty scores.
-    top_4_lines = parse_primers(resultp3, logger)
-    logger.info("The top 4 lowest primer penalties are:")
-    for line in top_4_lines:
-        logger.info("\t".join(line))
+    # top_4_lines = parse_primers(resultp3, logger)
+    # logger.info("The top 4 lowest primer penalties are:")
+    # for line in top_4_lines:
+    #     logger.info("\t".join(line))
 
     # Inform the user that we are not extracting primers and targets for the lowest penalties
     logger.info("Retrieving primers and targets for the lowest penalties...")
 
     # get a dictionary that contains the primers and the data. Primers and targets are identified by the line in the primer3 output their corresponding lowest penalty score is found at
+    print(resultp3)
     found_data = find_and_return_following_lines_and_target(
-        resultp3, top_4_lines, args.qpcr
+        resultp3, args.qpcr
     )
 
     logger.info("The resulting targets and primers are:")
@@ -322,40 +383,40 @@ def main():
         # Log the current key-value pair
         logger.info(f"{key}: {value}")
         
-        # Check if the current key is related to "Primer" by checking if the string "Primer" is in the key
-        is_primer = "Primer" in key
+    #     # Check if the current key is related to "Primer" by checking if the string "Primer" is in the key
+    #     is_primer = "Primer" in key
         
-        # Define the name of the temporary file where the data will be written
-        temp_file = f"{args.outfile_prefix}{key}.txt"
+    #     # Define the name of the temporary file where the data will be written
+    #     temp_file = f"{args.outfile_prefix}{key}.txt"
         
         # Open the temporary file for writing with UTF-8 encoding
-        with open(temp_file, "w", encoding="utf-8") as tf:
-            # If the current key is related to primer data
-            if is_primer:
-                # Iterate through each element in the value (which should be a list of primer data)
-                for element in value:
-                    # Split the element by '=' and remove unnecessary whitespace around it
-                    split_lines = re.split(r"\s*=\s*", element.strip())
+        # with open(temp_file, "w", encoding="utf-8") as tf:
+        #     # If the current key is related to primer data
+        #     if is_primer:
+        #         # Iterate through each element in the value (which should be a list of primer data)
+        #         for element in value:
+        #             # Split the element by '=' and remove unnecessary whitespace around it
+        #             split_lines = re.split(r"\s*=\s*", element.strip())
                     
-                    # If the split results in at least two parts (a name and a sequence)
-                    if len(split_lines) >= 2:
-                        # Write the primer data to the file in the format ">name\nsequence\n"
-                        tf.write(f">{split_lines[0]}\n{split_lines[1]}\n")
+        #             # If the split results in at least two parts (a name and a sequence)
+        #             if len(split_lines) >= 2:
+        #                 # Write the primer data to the file in the format ">name\nsequence\n"
+        #                 tf.write(f">{split_lines[0]}\n{split_lines[1]}\n")
             
-            # If the key contains "Data" (indicating it's data-related)
-            elif "Data" in key:
-                # Write all the data (joined with newlines) to the file
-                tf.write("\n".join(value))
+        #     # If the key contains "Data" (indicating it's data-related)
+        #     elif "Data" in key:
+        #         # Write all the data (joined with newlines) to the file
+        #         tf.write("\n".join(value))
             
-            # For other cases (non-primer, non-data)
-            else:
-                # Split the value by '=' and remove whitespace
-                split_line = re.split(r"\s*=\s*", value.strip())
+        #     # For other cases (non-primer, non-data)
+        #     else:
+        #         # Split the value by '=' and remove whitespace
+        #         split_line = re.split(r"\s*=\s*", value.strip())
                 
-                # If the split results in at least two parts (a name and a sequence)
-                if len(split_line) >= 2:
-                    # Write the name and sequence to the file in the format ">name\nsequence\n"
-                    tf.write(f">{split_line[0]}\n{split_line[1]}\n")
+        #         # If the split results in at least two parts (a name and a sequence)
+        #         if len(split_line) >= 2:
+        #             # Write the name and sequence to the file in the format ">name\nsequence\n"
+        #             tf.write(f">{split_line[0]}\n{split_line[1]}\n")
 
     # Define the paths for the destination folders where files will be moved
     destination_folder_pr = source_folder / "FUR.P3.PRIMERS"
@@ -366,11 +427,30 @@ def main():
     destination_folder_pr.mkdir(parents=True, exist_ok=True)
     destination_folder_tar.mkdir(parents=True, exist_ok=True)
     destination_folder_data.mkdir(parents=True, exist_ok=True)
+    
+    for items,values in found_data['targets'].items():
+        with open(f'{destination_folder_tar}/{items}.fna', "w", encoding="utf-8") as tf:
+                tf.write(f'>{items}\n')
+                tf.write(f'{values}')
+               
+    for items,values in found_data['primers'].items():
+        with open(f'{destination_folder_pr}/{items}.txt', "w", encoding="utf-8") as pf:
+                for direction,sequence in values.items():
+                    pf.write(f'>{direction}\n')
+                    pf.write(f'{sequence}\n')
+                    
+    for items,values in found_data['data'].items():
+        with open(f'{destination_folder_data}/{items}.txt', "w", encoding="utf-8") as df:
+                for header,value in values.items():
+                    df.write(f'{header}={value}\n')
+                    
+        # Open the temporary file for writing with UTF-8 encoding
+        # with open(temp_file, "w", encoding="utf-8") as tf:
 
     # Move files with specific patterns from the source folder to the appropriate destination folders
-    move_files(source_folder, destination_folder_tar, "*Target*.txt", logger)
-    move_files(source_folder, destination_folder_pr, "*Primer*.txt", logger)
-    move_files(source_folder, destination_folder_data, "*Data*.txt", logger)
+    # move_files(source_folder, destination_folder_tar, "*Target*.txt", logger)
+    # move_files(source_folder, destination_folder_pr, "*Primer*.txt", logger)
+    # move_files(source_folder, destination_folder_data, "*Data*.txt", logger)
 
     # Log that the script has completed successfully
     logger.info("Primer3_module.py ran to completion: exit status 0")
