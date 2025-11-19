@@ -128,10 +128,13 @@ def find_and_return_following_lines_and_target(
     found_data['targets'] ={}
     found_data['primers'] = {}
     found_data['data'] = {}
-    
+    # {"PRIMER_LEFT": None, "PRIMER_RIGHT": None, "PRIMER_INTERNAL": None} #example
     for k,v in top_4_dict.items():
         found_data['targets'][f"Target_{k}"] = v['SEQUENCE_TEMPLATE']
-        found_data['primers'][f"Primer_{k}"] = {'LEFT':v[f"PRIMER_LEFT_{v['subprimer']}_SEQUENCE"],'RIGHT':v[f"PRIMER_RIGHT_{v['subprimer']}_SEQUENCE"]}
+        if qpcr == "y":
+            found_data['primers'][f"Primer_{k}"] = {'PRIMER_LEFT':v[f"PRIMER_LEFT_{v['subprimer']}_SEQUENCE"],'PRIMER_RIGHT':v[f"PRIMER_RIGHT_{v['subprimer']}_SEQUENCE"],'PRIMER_INTERNAL':v[f"PRIMER_INTERNAL_{v['subprimer']}_SEQUENCE"]}
+        else:
+            found_data['primers'][f"Primer_{k}"] = {'PRIMER_LEFT':v[f"PRIMER_LEFT_{v['subprimer']}_SEQUENCE"],'PRIMER_RIGHT':v[f"PRIMER_RIGHT_{v['subprimer']}_SEQUENCE"],'PRIMER_INTERNAL':'NA'}
         found_data['data'][f"Data_primer_{k}"] = {header:value for header,value in v.items()}
     # Iterate over each 'top_line' in 'top_lines'
     # for top_line in top_lines:
@@ -335,17 +338,17 @@ def main():
         sys.exit()
 
     # try running primer3_core, write it to file, check if the file exists and/or is empty. If so,
-    print("Josh also needs to uncomment this")
-    # try:
-    #     logger.info("Running primer3_core.")
-    #     primer3 = subprocess.run(
-    #         ["primer3_core", str(resultf2p)], check=True, capture_output=True, text=True
-    #     )
-    # except subprocess.CalledProcessError as e:
-    #     logger.error("Primer 3 did not run successfully.", exc_info=1)
-    #     raise subprocess.CalledProcessError(
-    #         e.returncode, e.cmd, output=e.output, stderr=e.stderr
-    #     ) from e
+    # print("Josh also needs to uncomment this")
+    try:
+        logger.info("Running primer3_core.")
+        primer3 = subprocess.run(
+            ["primer3_core", str(resultf2p)], check=True, capture_output=True, text=True
+        )
+    except subprocess.CalledProcessError as e:
+        logger.error("Primer 3 did not run successfully.", exc_info=1)
+        raise subprocess.CalledProcessError(
+            e.returncode, e.cmd, output=e.output, stderr=e.stderr
+        ) from e
 
     # write the resulyts of the primer3 run to a file
     resultp3 = resultf2p.with_suffix(".primer3_out.txt")
