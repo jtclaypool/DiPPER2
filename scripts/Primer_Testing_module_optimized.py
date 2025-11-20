@@ -426,9 +426,6 @@ def main():
     logger_instance = Logger(module_name, source_folder, args.verbose)
     logger = logger_instance.get_logger()
 
-    # Check if programs are installed
-    check_program_installed("seqkit")
-    check_program_installed("blastx")
 
     # Define the folders with primers and targets
     destination_folder_pr = source_folder / "FUR.P3.PRIMERS"
