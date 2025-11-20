@@ -447,101 +447,102 @@ def main():
 
     all_files = list(destination_folder_pr.glob("*"))
 
-    for file_path in all_files:
-        if file_path.is_file():
-            logger.info(f"Testing your primers in {file_path}:\n")
-            try:
-                pr_frwd, pr_rev, pr_intern = extract_primer_sequences(file_path, logger)
-            except Exception as e:
-                logger.exception(
-                    f"Could not extract primer sequences from {file_path}: {e}",
-                    exc_info=1,
-                )
-                raise RuntimeError(
-                    f"Could not extract primer sequences from {file_path}: {e}"
-                ) from e
+    #These giant loops should be broken out as functions and passed job by job. Not within main - JC 20NOV2025
+#     for file_path in all_files:
+#         if file_path.is_file():
+#             logger.info(f"Testing your primers in {file_path}:\n")
+#             try:
+#                 pr_frwd, pr_rev, pr_intern = extract_primer_sequences(file_path, logger)
+#             except Exception as e:
+#                 logger.exception(
+#                     f"Could not extract primer sequences from {file_path}: {e}",
+#                     exc_info=1,
+#                 )
+#                 raise RuntimeError(
+#                     f"Could not extract primer sequences from {file_path}: {e}"
+#                 ) from e
 
-            # runs seqkit amplicon for targets with max mismatches of 4
-            for i in range(4):
-                try:
-                    out_seqk_target = run_seqkit_amplicon_with_optional_timeout(
-                        pr_frwd, pr_rev, concat_t, i, logger
-                    )
-                except subprocess.CalledProcessError as e:
-                    logger.exception(f"Error running seqkit amplicon: {e}")
-                    raise subprocess.CalledProcessError(
-                        returncode=-1, cmd="seqkit amplicon", output="", stderr=str(e)
-                    ) from e
-                except OSError as e:
-                    logger.exception(
-                        f"Error with the operating system while running seqkit amplicon: {e}"
-                    )
-                    raise OSError(
-                        f"Error with the operating system while running seqkit amplicon: {e}"
-                    ) from e
-                except Exception as e:
-                    logger.exception(
-                        f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
-                    )
-                    raise RuntimeError(
-                        f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
-                    ) from e
+#             # runs seqkit amplicon for targets with max mismatches of 4
+#             for i in range(4):
+#                 try:
+#                     out_seqk_target = run_seqkit_amplicon_with_optional_timeout(
+#                         pr_frwd, pr_rev, concat_t, i, logger
+#                     )
+#                 except subprocess.CalledProcessError as e:
+#                     logger.exception(f"Error running seqkit amplicon: {e}")
+#                     raise subprocess.CalledProcessError(
+#                         returncode=-1, cmd="seqkit amplicon", output="", stderr=str(e)
+#                     ) from e
+#                 except OSError as e:
+#                     logger.exception(
+#                         f"Error with the operating system while running seqkit amplicon: {e}"
+#                     )
+#                     raise OSError(
+#                         f"Error with the operating system while running seqkit amplicon: {e}"
+#                     ) from e
+#                 except Exception as e:
+#                     logger.exception(
+#                         f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
+#                     )
+#                     raise RuntimeError(
+#                         f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
+#                     ) from e
 
-                if not out_seqk_target:
-                    logger.warning(
-                        f"Seqkit amplicon did not return any matches for the primers in the targets with -m flag at {i}"
-                    )
-                    continue
+#                 if not out_seqk_target:
+#                     logger.warning(
+#                         f"Seqkit amplicon did not return any matches for the primers in the targets with -m flag at {i}"
+#                     )
+#                     continue
 
-                try:
-                    # Construct filename for output
-                    filename = f"{file_path}_seqkit_amplicon_against_target_m{i}.txt"
+#                 try:
+#                     # Construct filename for output
+#                     dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
 
-                    # Write output to the file
-                    with open(filename, "w", encoding="utf-8") as file:
-                        file.write(out_seqk_target)
-                except (IOError, OSError, PermissionError) as e:
-                    # Log error and raise exception with additional context
-                    logger.exception(
-                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
-                    )
-                    raise RuntimeError(
-                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
-                    ) from e
-            # run seqkit amplicon for neighbours with up to 5 mismatches. Time out after 8 min
-            for i in range(5):
-                try:
-                    out_seqk_neighbour = run_seqkit_amplicon_with_optional_timeout(
-                        pr_frwd, pr_rev, concat_n, i, logger, timeout=480)
-                    logger.info(f"ran seqkit amplicon for {i} mismatches")
-                except Exception as e:
-                    logger.exception(f"Error running seqkit amplicon: {e}")
-                    raise Exception(f"Error running seqkit amplicon: {e}") from e
+#                     # Write output to the file
+#                     with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_target_m{i}.txt")), "w", encoding="utf-8") as filename:
+#                         filename.write(out_seqk_target)
+#                 except (IOError, OSError, PermissionError) as e:
+#                     # Log error and raise exception with additional context
+#                     logger.exception(
+#                         f"Error writing output of seqkit amplicon to file {filename}: {e}"
+#                     )
+#                     raise RuntimeError(
+#                         f"Error writing output of seqkit amplicon to file {filename}: {e}"
+#                     ) from e
+#             # run seqkit amplicon for neighbours with up to 5 mismatches. Time out after 8 min
+#             for i in range(5):
+#                 try:
+#                     out_seqk_neighbour = run_seqkit_amplicon_with_optional_timeout(
+#                         pr_frwd, pr_rev, concat_n, i, logger, timeout=480)
+#                     logger.info(f"ran seqkit amplicon for {i} mismatches against neighbours")
+#                 except Exception as e:
+#                     logger.exception(f"Error running seqkit amplicon: {e}")
+#                     raise Exception(f"Error running seqkit amplicon: {e}") from e
 
-                if not out_seqk_neighbour:
-                    logger.warning(
-                        f"Seqkit amplicon did not return any matches for the primers in the neighbours with -m flag at {i}"
-                    )
-                    continue
+#                 if not out_seqk_neighbour:
+#                     logger.warning(
+#                         f"Seqkit amplicon did not return any matches for the primers in the neighbours with -m flag at {i}"
+#                     )
+#                     continue
 
-                try:
-                    # Construct filename for output
-                    filename = f"{file_path}_seqkit_amplicon_against_neighbour_m{i}.txt"
+#                 try:
+#                     # Construct filename for output
+#                     dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
 
-                    # Write output to the file
-                    with open(filename, "w", encoding="utf-8") as file:
-                        file.write(out_seqk_neighbour)
-                except (IOError, OSError, PermissionError) as e:
-                    # Log error and raise exception with additional context
-                    logger.error(
-                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
-                    )
-                    raise RuntimeError(
-                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
-                    )
+#                     # Write output to the file
+#                     with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_neighbour_m{i}.txt")), "w", encoding="utf-8") as filename:
+#                         filename.write(out_seqk_target)
+#                 except (IOError, OSError, PermissionError) as e:
+#                     # Log error and raise exception with additional context
+#                     logger.error(
+#                         f"Error writing output of seqkit amplicon to file:{e}"
+#                     )
+#                     raise RuntimeError(
+#                         f"Error writing output of seqkit amplicon to file:{e}"
+#                     )
 
-   # Log an informational message to indicate that the blastx command is starting
-    logger.info("Running blastx on the targets...")
+#    # Log an informational message to indicate that the blastx command is starting
+#     logger.info("Running blastx on the targets...")
 
     # Get a list of all files in the destination folder
     all_files_tar = list(destination_folder_tar.glob("*"))
@@ -580,7 +581,7 @@ def main():
                 # Get the amplicon related to the current target file
                 file = (
                     destination_folder_pr
-                    / f"{file_path_tar.name}_seqkit_amplicon_against_target_m0.txt"
+                    / f"{file_path_tar.name.strip(".fna")}/seqkit_amplicon_against_target_m0.txt"
                 )
                 file = Path(str(file).replace("Target", "Primer"))  # Adjust the file path for primer
                 amp = get_amplicon(file)  # Get the amplicon from the file
@@ -616,14 +617,15 @@ def main():
 
                 try:
                     # Generate a file name for the bed file and write seqkit locate results to it
-                    match_no = re.search(r"_(\d+)\.txt", file_path_tar.name)
+                    # match_no = re.search(r"_(\d+)\.txt", file_path_tar.name)
                     ref = Path(ref)
-                    filename = f"Primer_{int(match_no.group(1))}_amplicon_locate_in_{ref.name}.bed"
-                    filename = source_folder / filename
+                    filename = f"amplicon_locate_in_{ref.name}.bed"
+                    Path(source_folder, f"{file_path_tar.name.strip('.fna')}").mkdir(exist_ok=True,parents=True)
+                    filename = source_folder / f"{file_path_tar.name.strip('.fna')}" / filename
                     logger.info(f"Printing bed file for seqkit locate to {filename}")
-                    with open(filename, "w", encoding="utf-8") as file:
+                    with open(filename, "w", encoding="utf-8") as bedfile:
                         logger.info("Writing results of seqkit locate to bed file...")
-                        file.write(seqk_loc_out)  # Write the locate results to the bed file
+                        bedfile.write(seqk_loc_out)  # Write the locate results to the bed file
                 except OSError as e:
                     # If an error occurs while writing the output to the file, log it and raise an exception
                     logger.error(f"Error writing output of seqkit locate to file {filename}: {e}")
@@ -632,30 +634,30 @@ def main():
             try:
                 # Write the blastx output to a text file
                 filenamed = f"{file_path_tar}_blastx_1e-5.txt"
-                with open(filenamed, "w", encoding="utf-8") as file_1:
-                    file_1.write(output_tar)  # Save blastx results to a file
+                with open(filenamed, "w", encoding="utf-8") as blastfile:
+                    blastfile.write(output_tar)  # Save blastx results to a file
             except Exception as e:
                 # If an error occurs while writing the blastx output, log it and raise an exception
                 logger.error(f"Error writing output of blastx to file {filenamed}: {e}")
                 raise Exception(f"Error writing output of blastx to file {filenamed}: {e}") from e
 
     # Move files that are related to seqkit testing into a subfolder called "in_silico_tests"
-    in_silico_folder = destination_folder_pr / "in_silico_tests"
-    in_silico_folder.mkdir(parents=True, exist_ok=True)  # Create the subfolder if it doesn't exist
+    # in_silico_folder = destination_folder_pr / "in_silico_tests"
+    # in_silico_folder.mkdir(parents=True, exist_ok=True)  # Create the subfolder if it doesn't exist
     pattern_to_match = "seqkit_amplicon_against"  # Pattern to search for in the file names
 
-    logger.info(f"Moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}...")
+    # logger.info(f"Moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}...")
 
-    try:
-        # Move files matching the pattern from the destination folder to the in_silico_tests folder
-        move_files_with_pattern(destination_folder_pr, pattern_to_match, in_silico_folder)
-    except Exception as e:
-        # If an error occurs during the file moving process, log it and raise an exception
-        logger.error(f"Error moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}: {e}")
-        raise Exception(f"Error moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}: {e}") from e
+    # try:
+    #     # Move files matching the pattern from the destination folder to the in_silico_tests folder
+    #     # move_files_with_pattern(destination_folder_pr, pattern_to_match, in_silico_folder)
+    # except Exception as e:
+    #     # If an error occurs during the file moving process, log it and raise an exception
+    #     logger.error(f"Error moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}: {e}")
+    #     raise Exception(f"Error moving files with {pattern_to_match} in name from {destination_folder_pr} into {in_silico_folder}: {e}") from e
 
     # Log that the script has completed successfully
-    logger.info("Primer_Testing_module.py ran to completion: exit status 0")
+    # logger.info("Primer_Testing_module.py ran to completion: exit status 0")
 
     # If the 'delete_concat' argument is set, delete concatenated files
     if args.delete_concat:
