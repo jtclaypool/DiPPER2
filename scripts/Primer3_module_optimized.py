@@ -352,7 +352,7 @@ def main():
 
     # write the resulyts of the primer3 run to a file
     resultp3 = resultf2p.with_suffix(".primer3_out.txt")
-    # resultp3.write_text(primer3.stdout.strip(), encoding="utf-8")
+    resultp3.write_text(primer3.stdout.strip(), encoding="utf-8")
 
     # complain about no results and raise exception
     if not resultp3.exists() or resultp3.stat().st_size == 0:
@@ -437,7 +437,7 @@ def main():
                 tf.write(f'{values}')
                
     for items,values in found_data['primers'].items():
-        with open(f'{destination_folder_pr}/{items}.txt', "w", encoding="utf-8") as pf:
+        with open(f'{destination_folder_pr}/{items}.fna', "w", encoding="utf-8") as pf:
                 for direction,sequence in values.items():
                     pf.write(f'>{direction}\n')
                     pf.write(f'{sequence}\n')
