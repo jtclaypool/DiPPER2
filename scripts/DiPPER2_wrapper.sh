@@ -278,5 +278,5 @@ if [[ $EXIT_STATUS -ne 0 ]]; then
     echo "Could not generate Results files. Summarize_results_module failed with error ${EXIT_STATUS}. Check log for details!"
     exit 1
 fi
-deactivate
+
 echo "Finished!"

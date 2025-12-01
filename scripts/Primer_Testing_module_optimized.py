@@ -273,7 +273,7 @@ def run_seqkit_locate(amplicon: str, ref_file: Path,logger: Logger):
         # Create subprocess to read the input file using 'cat'
         cat = subprocess.Popen(["cat", ref_file], stdout=subprocess.PIPE, text=True)
         # Pipe that output into subprocess that runs seqkit locate
-        logger.debug("started subprocess seqkit locate")
+        logger.info("started subprocess seqkit locate")
         seqkit_out = subprocess.Popen(
             ["seqkit", "locate", "-p", amplicon, "--bed", "-m", "2"],
             stdin=cat.stdout,
@@ -289,7 +289,7 @@ def run_seqkit_locate(amplicon: str, ref_file: Path,logger: Logger):
             logger.error(f"Error output from seqkit: {error}")
             raise subprocess.CalledProcessError(seqkit_out.returncode, "seqkit locate")
 
-        logger.debug("seqkit locate ran successfully, returning the output...")
+        logger.info("seqkit locate ran successfully, returning the output...")
 
         return output
     # if subprocess failed and exception was not handled elsewhere
@@ -448,98 +448,98 @@ def main():
     all_files = list(destination_folder_pr.glob("*"))
 
     #These giant loops should be broken out as functions and passed job by job. Not within main - JC 20NOV2025
-#     for file_path in all_files:
-#         if file_path.is_file():
-#             logger.info(f"Testing your primers in {file_path}:\n")
-#             try:
-#                 pr_frwd, pr_rev, pr_intern = extract_primer_sequences(file_path, logger)
-#             except Exception as e:
-#                 logger.exception(
-#                     f"Could not extract primer sequences from {file_path}: {e}",
-#                     exc_info=1,
-#                 )
-#                 raise RuntimeError(
-#                     f"Could not extract primer sequences from {file_path}: {e}"
-#                 ) from e
+    for file_path in all_files:
+        if file_path.is_file():
+            logger.info(f"Testing your primers in {file_path}:\n")
+            try:
+                pr_frwd, pr_rev, pr_intern = extract_primer_sequences(file_path, logger)
+            except Exception as e:
+                logger.exception(
+                    f"Could not extract primer sequences from {file_path}: {e}",
+                    exc_info=1,
+                )
+                raise RuntimeError(
+                    f"Could not extract primer sequences from {file_path}: {e}"
+                ) from e
 
-#             # runs seqkit amplicon for targets with max mismatches of 4
-#             for i in range(4):
-#                 try:
-#                     out_seqk_target = run_seqkit_amplicon_with_optional_timeout(
-#                         pr_frwd, pr_rev, concat_t, i, logger
-#                     )
-#                 except subprocess.CalledProcessError as e:
-#                     logger.exception(f"Error running seqkit amplicon: {e}")
-#                     raise subprocess.CalledProcessError(
-#                         returncode=-1, cmd="seqkit amplicon", output="", stderr=str(e)
-#                     ) from e
-#                 except OSError as e:
-#                     logger.exception(
-#                         f"Error with the operating system while running seqkit amplicon: {e}"
-#                     )
-#                     raise OSError(
-#                         f"Error with the operating system while running seqkit amplicon: {e}"
-#                     ) from e
-#                 except Exception as e:
-#                     logger.exception(
-#                         f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
-#                     )
-#                     raise RuntimeError(
-#                         f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
-#                     ) from e
+            # runs seqkit amplicon for targets with max mismatches of 4
+            for i in range(4):
+                try:
+                    out_seqk_target = run_seqkit_amplicon_with_optional_timeout(
+                        pr_frwd, pr_rev, concat_t, i, logger
+                    )
+                except subprocess.CalledProcessError as e:
+                    logger.exception(f"Error running seqkit amplicon: {e}")
+                    raise subprocess.CalledProcessError(
+                        returncode=-1, cmd="seqkit amplicon", output="", stderr=str(e)
+                    ) from e
+                except OSError as e:
+                    logger.exception(
+                        f"Error with the operating system while running seqkit amplicon: {e}"
+                    )
+                    raise OSError(
+                        f"Error with the operating system while running seqkit amplicon: {e}"
+                    ) from e
+                except Exception as e:
+                    logger.exception(
+                        f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
+                    )
+                    raise RuntimeError(
+                        f"Unknown exception/ unexpected error running seqkit amplicon: {e}"
+                    ) from e
 
-#                 if not out_seqk_target:
-#                     logger.warning(
-#                         f"Seqkit amplicon did not return any matches for the primers in the targets with -m flag at {i}"
-#                     )
-#                     continue
+                if not out_seqk_target:
+                    logger.warning(
+                        f"Seqkit amplicon did not return any matches for the primers in the targets with -m flag at {i}"
+                    )
+                    continue
 
-#                 try:
-#                     # Construct filename for output
-#                     dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
+                try:
+                    # Construct filename for output
+                    dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
 
-#                     # Write output to the file
-#                     with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_target_m{i}.txt")), "w", encoding="utf-8") as filename:
-#                         filename.write(out_seqk_target)
-#                 except (IOError, OSError, PermissionError) as e:
-#                     # Log error and raise exception with additional context
-#                     logger.exception(
-#                         f"Error writing output of seqkit amplicon to file {filename}: {e}"
-#                     )
-#                     raise RuntimeError(
-#                         f"Error writing output of seqkit amplicon to file {filename}: {e}"
-#                     ) from e
-#             # run seqkit amplicon for neighbours with up to 5 mismatches. Time out after 8 min
-#             for i in range(5):
-#                 try:
-#                     out_seqk_neighbour = run_seqkit_amplicon_with_optional_timeout(
-#                         pr_frwd, pr_rev, concat_n, i, logger, timeout=480)
-#                     logger.info(f"ran seqkit amplicon for {i} mismatches against neighbours")
-#                 except Exception as e:
-#                     logger.exception(f"Error running seqkit amplicon: {e}")
-#                     raise Exception(f"Error running seqkit amplicon: {e}") from e
+                    # Write output to the file
+                    with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_target_m{i}.txt")), "w", encoding="utf-8") as filename:
+                        filename.write(out_seqk_target)
+                except (IOError, OSError, PermissionError) as e:
+                    # Log error and raise exception with additional context
+                    logger.exception(
+                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
+                    )
+                    raise RuntimeError(
+                        f"Error writing output of seqkit amplicon to file {filename}: {e}"
+                    ) from e
+            # run seqkit amplicon for neighbours with up to 5 mismatches. Time out after 8 min
+            for i in range(5):
+                try:
+                    out_seqk_neighbour = run_seqkit_amplicon_with_optional_timeout(
+                        pr_frwd, pr_rev, concat_n, i, logger, timeout=480)
+                    logger.info(f"ran seqkit amplicon for {i} mismatches against neighbours")
+                except Exception as e:
+                    logger.exception(f"Error running seqkit amplicon: {e}")
+                    raise Exception(f"Error running seqkit amplicon: {e}") from e
 
-#                 if not out_seqk_neighbour:
-#                     logger.warning(
-#                         f"Seqkit amplicon did not return any matches for the primers in the neighbours with -m flag at {i}"
-#                     )
-#                     continue
+                if not out_seqk_neighbour:
+                    logger.warning(
+                        f"Seqkit amplicon did not return any matches for the primers in the neighbours with -m flag at {i}"
+                    )
+                    continue
 
-#                 try:
-#                     # Construct filename for output
-#                     dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
+                try:
+                    # Construct filename for output
+                    dirname = Path(f'{str(file_path).strip(".fna")}').mkdir(exist_ok=True,parents=True)
 
-#                     # Write output to the file
-#                     with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_neighbour_m{i}.txt")), "w", encoding="utf-8") as filename:
-#                         filename.write(out_seqk_target)
-#                 except (IOError, OSError, PermissionError) as e:
-#                     # Log error and raise exception with additional context
-#                     logger.error(
-#                         f"Error writing output of seqkit amplicon to file:{e}"
-#                     )
-#                     raise RuntimeError(
-#                         f"Error writing output of seqkit amplicon to file:{e}"
-#                     )
+                    # Write output to the file
+                    with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_neighbour_m{i}.txt")), "w", encoding="utf-8") as filename:
+                        filename.write(out_seqk_target)
+                except (IOError, OSError, PermissionError) as e:
+                    # Log error and raise exception with additional context
+                    logger.error(
+                        f"Error writing output of seqkit amplicon to file:{e}"
+                    )
+                    raise RuntimeError(
+                        f"Error writing output of seqkit amplicon to file:{e}"
+                    )
 
 #    # Log an informational message to indicate that the blastx command is starting
 #     logger.info("Running blastx on the targets...")
@@ -550,96 +550,105 @@ def main():
     # Iterate through each file in the list
     for file_path_tar in all_files_tar:
         if file_path_tar.is_file():  # Check if the current item is a file, not a directory
-            print(f"{file_path_tar}")  # Print the file path for tracking purposes
+            print(f"File path tar:{file_path_tar}")  # Print the file path for tracking purposes
             output_tar = "" #initialize
-            try:
-                # Run the blastx command with the necessary parameters and capture stdout and stderr
-                result = subprocess.run(
-                    [
-                        "blastx",  # The blastx command for sequence alignment
-                        "-query", str(file_path_tar),  # Input file (query)
-                        "-remote",  # Use remote database (instead of local)
-                        "-db", "nr",  # Database to query against (nr - non-redundant)
-                        "-evalue", "0.00001",  # E-value threshold for the alignment
-                        "-outfmt", "6",  # Output format (tabular)
-                    ],
-                    stdout=subprocess.PIPE,  # Capture standard output
-                    stderr=subprocess.PIPE,  # Capture standard error
-                    text=True,  # Ensure output is returned as text
-                    check=True,  # Raise an error if the subprocess fails
-                )
-                output_tar = result.stdout  # Store the output of the blastx command
-            except Exception as e:
-                logger.exception(f"Blastx failed: {e}")
-                logger.warning("Proceeding with seqkit locate instead.")
+            # try:
+            #     print("running blastx")
+            #     # Run the blastx command with the necessary parameters and capture stdout and stderr
+            #     result = subprocess.run(
+            #         [
+            #             "blastx",  # The blastx command for sequence alignment
+            #             "-query", str(file_path_tar),  # Input file (query)
+            #             "-remote",  # Use remote database (instead of local)
+            #             "-db", "nr",  # Database to query against (nr - non-redundant)
+            #             "-evalue", "0.00001",  # E-value threshold for the alignment
+            #             "-outfmt", "6",  # Output format (tabular)
+            #         ],
+            #         stdout=subprocess.PIPE,  # Capture standard output
+            #         stderr=subprocess.PIPE,  # Capture standard error
+            #         text=True,  # Ensure output is returned as text
+            #         check=True,  # Raise an error if the subprocess fails
+            #     )
+            #     print("Blastx done. ")
+            #     output_tar = result.stdout  # Store the output of the blastx command
+            # except Exception as e:
+            #     logger.exception(f"Blastx failed: {e}")
+            #     logger.warning("Proceeding with seqkit locate instead.")
                 
 
             # If no output is generated by blastx, log a message and proceed with further steps
-            if not output_tar:
-                logger.info("Blastx did not return any results. No matches found.")
+            # if not output_tar:
+            #     logger.info("Blastx did not return any results. No matches found.")
 
                 # Get the amplicon related to the current target file
-                file = (
-                    destination_folder_pr
-                    / f"{file_path_tar.name.strip(".fna")}/seqkit_amplicon_against_target_m0.txt"
+            targetfile = (
+                destination_folder_pr
+                / f"{file_path_tar.name.strip(".fna")}/seqkit_amplicon_against_target_m0.txt"
+            )
+            print(targetfile)
+            targetfile = Path(str(targetfile).replace("Target", "Primer"))  # Adjust the file path for primer
+            print(targetfile)
+            amp = get_amplicon(targetfile)  # Get the amplicon from the file
+            logger.info(f"The amplicon is {amp}")
+
+            # Check if a reference is provided, otherwise use the longest target assembly
+            try:
+                if args.ref:
+                    ref = Path(args.ref)  # Use provided reference
+                    seqk_loc_out = run_seqkit_locate(amp, ref, logger)  # Run seqkit locate with the reference
+                else:
+                    logger.warning("No reference found, using longest target assembly")
+                    ref = get_longest_target(fur_target)  # Get the longest target assembly
+                    print(ref)
+                    if not ref:  # If no valid assembly is found, log and continue
+                        logger.warning(
+                            f"No valid assembly found in {fur_target} to run seqkit locate. Do the assembly fasta files end on .fa, .fasta, or .fna?"
+                        )
+                        continue
+                    logger.info(f"Using longest target assembly: {ref}")
+                    seqk_loc_out = run_seqkit_locate(amp, ref, logger)  # Run seqkit locate with the longest assembly
+            except Exception as e:
+                # If an error occurs during seqkit locate, log it and raise an exception
+                logger.error(f"Error running seqkit locate:{e}")
+                raise Exception(f"Unknown exception running seqkit locate: {e}") from e
+
+            # If no results are returned from seqkit locate, log a warning and continue
+            if not seqk_loc_out:
+                logger.warning(
+                    f'Seqkit locate did not return a bed file for the assembly {args.ref if args.ref else ref} with the amplicon "{amp}".\n'
                 )
-                file = Path(str(file).replace("Target", "Primer"))  # Adjust the file path for primer
-                amp = get_amplicon(file)  # Get the amplicon from the file
-                logger.info(f"The amplicon is {amp}")
-
-                # Check if a reference is provided, otherwise use the longest target assembly
-                try:
-                    if args.ref:
-                        ref = Path(args.ref)  # Use provided reference
-                        seqk_loc_out = run_seqkit_locate(amp, ref, logger)  # Run seqkit locate with the reference
-                    else:
-                        logger.warning("No reference found, using longest target assembly")
-                        ref = get_longest_target(fur_target)  # Get the longest target assembly
-                        if not ref:  # If no valid assembly is found, log and continue
-                            logger.warning(
-                                f"No valid assembly found in {fur_target} to run seqkit locate. Do the assembly fasta files end on .fa, .fasta, or .fna?"
-                            )
-                            continue
-                        logger.info(f"Using longest target assembly: {ref}")
-                        seqk_loc_out = run_seqkit_locate(amp, ref, logger)  # Run seqkit locate with the longest assembly
-
-                except Exception as e:
-                    # If an error occurs during seqkit locate, log it and raise an exception
-                    logger.error(f"Error running seqkit locate:{e}")
-                    raise Exception(f"Unknown exception running seqkit locate: {e}") from e
-
-                # If no results are returned from seqkit locate, log a warning and continue
-                if not seqk_loc_out:
-                    logger.warning(
-                        f'Seqkit locate did not return a bed file for the assembly {args.ref if args.ref else ref} with the amplicon "{amp}".\n'
-                    )
-                    continue
-
-                try:
-                    # Generate a file name for the bed file and write seqkit locate results to it
-                    # match_no = re.search(r"_(\d+)\.txt", file_path_tar.name)
-                    ref = Path(ref)
-                    filename = f"amplicon_locate_in_{ref.name}.bed"
-                    Path(source_folder, f"{file_path_tar.name.strip('.fna')}").mkdir(exist_ok=True,parents=True)
-                    filename = source_folder / f"{file_path_tar.name.strip('.fna')}" / filename
-                    logger.info(f"Printing bed file for seqkit locate to {filename}")
-                    with open(filename, "w", encoding="utf-8") as bedfile:
-                        logger.info("Writing results of seqkit locate to bed file...")
-                        bedfile.write(seqk_loc_out)  # Write the locate results to the bed file
-                except OSError as e:
-                    # If an error occurs while writing the output to the file, log it and raise an exception
-                    logger.error(f"Error writing output of seqkit locate to file {filename}: {e}")
-                    raise OSError(f"Error writing output of seqkit locate to file {filename}: {e}") from e
+                continue
 
             try:
-                # Write the blastx output to a text file
-                filenamed = f"{file_path_tar}_blastx_1e-5.txt"
-                with open(filenamed, "w", encoding="utf-8") as blastfile:
-                    blastfile.write(output_tar)  # Save blastx results to a file
-            except Exception as e:
-                # If an error occurs while writing the blastx output, log it and raise an exception
-                logger.error(f"Error writing output of blastx to file {filenamed}: {e}")
-                raise Exception(f"Error writing output of blastx to file {filenamed}: {e}") from e
+                # Generate a file name for the bed file and write seqkit locate results to it
+                # match_no = re.search(r"_(\d+)\.txt", file_path_tar.name)
+                ref = Path(ref)
+                
+                #try making insilico folder first
+                Path(source_folder, "in_silico_tests").mkdir(exist_ok=True,parents=True)
+                filename = f"{file_path_tar.name.strip('.fna')}_amplicon_locate_in_{ref.name}.bed"
+                # Path(source_folder, f"{file_path_tar.name.strip('.fna')}").mkdir(exist_ok=True,parents=True)
+                # filename = source_folder / f"{file_path_tar.name.strip('.fna')}" / filename
+
+                filename = source_folder / "in_silico_tests" / filename
+                logger.info(f"Printing bed file for seqkit locate to {filename}")
+                with open(filename, "w", encoding="utf-8") as bedfile:
+                    logger.info("Writing results of seqkit locate to bed file...")
+                    bedfile.write(seqk_loc_out)  # Write the locate results to the bed file
+            except OSError as e:
+                # If an error occurs while writing the output to the file, log it and raise an exception
+                logger.error(f"Error writing output of seqkit locate to file {filename}: {e}")
+                raise OSError(f"Error writing output of seqkit locate to file {filename}: {e}") from e
+
+            # try:
+            #     # Write the blastx output to a text file
+            #     filenamed = f"{file_path_tar}_blastx_1e-5.txt"
+            #     with open(filenamed, "w", encoding="utf-8") as blastfile:
+            #         blastfile.write(output_tar)  # Save blastx results to a file
+            # except Exception as e:
+            #     # If an error occurs while writing the blastx output, log it and raise an exception
+            #     logger.error(f"Error writing output of blastx to file {filenamed}: {e}")
+            #     raise Exception(f"Error writing output of blastx to file {filenamed}: {e}") from e
 
     # Move files that are related to seqkit testing into a subfolder called "in_silico_tests"
     # in_silico_folder = destination_folder_pr / "in_silico_tests"

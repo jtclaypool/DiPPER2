@@ -172,14 +172,15 @@ def extract_number_and_primers(
     pr_frwd, pr_rev, pr_intern = extract_primer_sequences(file_path, logger)
 
     # get the amplicon length from the amplified sequences in the in silico files
-    target_seq = f"*Primer_{number}.txt_seqkit_amplicon_against_target_m0.txt"
-    file = next(folder.glob(target_seq), None)
-    if file is None:
-        logger.error(
-            "No file with in silico results for the target at m0 found.", exc_info=1
-        )
-        raise FileNotFoundError(f"No file matches the pattern {target_seq}")
-    ampli_len = get_amplicon_length_from_seq(file)
+    target_seq = f"seqkit_amplicon_against_target_m0.txt"
+    
+    targetfile = folder.parent/ "FUR.P3.PRIMERS" / f"Primer_{number}" / target_seq
+    # if file is None:
+    #     logger.error(
+    #         "No file with in silico results for the target at m0 found.", exc_info=1
+    #     )
+    #     raise FileNotFoundError(f"No file matches the pattern {target_seq}")
+    ampli_len = get_amplicon_length_from_seq(targetfile)
 
     return number, pr_frwd, pr_rev, pr_intern, ampli_len
 
@@ -196,13 +197,19 @@ def extract_number_from_filename(filename: str, logger: Logger) -> int:
     """
 
     # regex match the number
-    match = re.search(r"_(\d+)\.txt", filename)
+    
+    #JC - no longer an integer
+    # match = re.search(r"_(\d+)\.txt", filename)
+    
+    primer_no = filename.replace("Primer_","").replace(".fna","")
+    logger.info(f"using primer: {primer_no}")
+    return primer_no
     # if match is found, return the number
-    if match:
-        return int(match.group(1))
-    else:
-        logger.error(f"No number found in the filename: {filename}", exc_info=1)
-        raise ValueError(f"No number found in the filename: {filename}")
+    # if match:
+    #     return int(match.group(1))
+    # else:
+    #     logger.error(f"No number found in the filename: {filename}", exc_info=1)
+    #     raise ValueError(f"No number found in the filename: {filename}")
 
 
 def extract_primer_sequences(file: Path, logger: Logger) -> tuple[str, str, str]:
@@ -276,7 +283,9 @@ def run_tests(
         "Starting the run_tests function and parsing the information of the in silico tests."
     )
     # find the in silico testing files
-    file_pattern = f"{file}_seqkit_amplicon_against_{target_type}_m*"
+    print(f"this is the primer file: {file}")
+    folder = folder.parent/ "FUR.P3.PRIMERS" / f"Primer_{extract_number_from_filename(file,logger)}"
+    file_pattern = f"seqkit_amplicon_against_{target_type}_m*"
     files = list(folder.glob(file_pattern))
     # initialize counters
     amp_f_overall, passed, failed, passed_n, failed_n = 0, 0, 0, 0, 0
@@ -908,7 +917,7 @@ def main():
     # Define folders
     destination_folder_pr = source_folder / "FUR.P3.PRIMERS"
     destination_folder_tar = source_folder / "FUR.P3.TARGETS"
-    destination_folder_seqkit = source_folder / "FUR.P3.PRIMERS" / "in_silico_tests"
+    destination_folder_seqkit = source_folder / "in_silico_tests"
 
     # do they exist and are they not empty?
     check_folders(
