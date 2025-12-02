@@ -531,7 +531,7 @@ def main():
 
                     # Write output to the file
                     with open(str(Path(f'{str(file_path).strip(".fna")}',f"seqkit_amplicon_against_neighbour_m{i}.txt")), "w", encoding="utf-8") as filename:
-                        filename.write(out_seqk_target)
+                        filename.write(out_seqk_neighbour)
                 except (IOError, OSError, PermissionError) as e:
                     # Log error and raise exception with additional context
                     logger.error(
