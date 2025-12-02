@@ -1,9 +1,9 @@
 #!/usr/bin/env bash 
-set -e
+# set -e
 
 # Complaints, bugs, praise, requests, cute cat pics, complaints etc can be sent to theresa_wacker@mailbox.org or t.wacker2@exeter.ac.uk
 
-die() { echo "$@" ; exit 1; }
+die() { echo "$@" ; exit 0; }
 diemsg() {
     echo "Usage: $0 -f <results folder> -d <folder with the assemblies> -l <list with targets> 
     -o <outfile prefix 
@@ -184,7 +184,7 @@ fi
 #check if the command failed with an exit status other than 0
 if [[ $EXIT_STATUS -ne 0 ]]; then
     echo "FUR failed with error ${EXIT_STATUS}. Check log for details!"
-    exit 1
+    exit
 fi
 echo "Finished running FUR"
 
@@ -219,8 +219,8 @@ fi
 
 #check if the command failed with an exit status other than 0
 if [[ $EXIT_STATUS -ne 0 ]]; then
-    echo "Primer picking failed with error ${EXIT_STATUS}. Check log for details!"
-    exit 1
+    diemsg "Primer picking failed with error ${EXIT_STATUS}. Check log for details!"
+    exit
 fi
 echo "Finished primer picking."
 
@@ -255,8 +255,8 @@ fi
 
 #check if the command failed with an exit status other than 0
 if [[ $EXIT_STATUS -ne 0 ]]; then
-    echo "Primer testing failed with error ${EXIT_STATUS}. Check log for details!"
-    exit 1
+    diemsg "Primer testing failed with error ${EXIT_STATUS}. Check log for details!"
+    exit
 fi
 
 echo "Finished in silico PCR and target definition."
@@ -275,8 +275,8 @@ fi
 # Clean up FUR.target and FUR.neighbour after saving all the targets and neighbours into txt files
 #check if the command failed with an exit status other than 0
 if [[ $EXIT_STATUS -ne 0 ]]; then
-    echo "Could not generate Results files. Summarize_results_module failed with error ${EXIT_STATUS}. Check log for details!"
-    exit 1
+    diemsg "Could not generate Results files. Summarize_results_module failed with error ${EXIT_STATUS}. Check log for details!"
+    exit 
 fi
 
 echo "Finished!"
