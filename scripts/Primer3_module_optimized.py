@@ -12,46 +12,6 @@ from fur2primer3 import remap_keys, write_result, args_to_dict
 from logging_handler import Logger
 
 
-# def parse_primers(file_name: str, logger: Logger) -> list:
-#     """
-#     Parse the primer penalties from the file and return the top lines.
-
-#     Args:
-#         file_name (str): the file name of the primer3 output
-
-#     Returns:
-#         sorted_lines (list): the first 4 elements of a list of penalty sorted incrementally
-#     """
-#     with open(file_name, "r", encoding="utf-8") as file:
-#         lines = file.readlines()
-
-#     # if line with PRIMER_PAIR_0_PENALTY is found, put in list
-#     filtered_lines = [line for line in lines if "PRIMER_PAIR_0_PENALTY" in line]
-#     # This line processes each line in 'filtered_lines' by stripping whitespace and splitting 
-#     # it into two parts at the first occurrence of the '=' symbol. The result is a list of lists,
-#     # where each sublist contains the parts of the line before and after the '='. The regular 
-#     # expression 'r"\s*=\s*"' ensures that any surrounding whitespace around the '=' is ignored.
-#     split_lines = [re.split(r"\s*=\s*", line.strip()) for line in filtered_lines]
-
-#     try:
-#         # Attempt to sort 'split_lines' by the second element in each sublist (x[1]), converting it to a float
-#         sorted_lines = sorted(split_lines, key=lambda x: float(x[1]))
-#     except ValueError as e:
-#         # If a ValueError occurs during sorting (e.g., non-numeric data), log the error with exception info
-#         logger.exception("Error in sorting lines", exc_info=1)
-#         # Raise a new ValueError, preserving the original exception details
-#         raise ValueError(f"Error in sorting lines: {e}") from e
-
-#     # If the sorted list is empty, log an error indicating no primers were found
-#     if not sorted_lines:
-#         logger.error("Error: No primers found in file")
-#         # Raise an exception because no valid data was found to return
-#         raise Exception("Error: No primers found in file")
-
-#     # Return the first 4 items from the sorted list
-#     return sorted_lines[:4]
-
-
 
 def find_and_return_following_lines_and_target(
     file_name: str, qpcr: str
@@ -109,7 +69,8 @@ def find_and_return_following_lines_and_target(
 
     # print(primer_header)
     del primer_dict[i]
-    top_4_penalties = sorted(list(set(penalties)))[:4]
+    top_4_penalties = sorted(list(set(penalties)))[:15]
+    print("Primer3_module_optimized line 112 to change number of primers")
 
         
     print(f'The top 4 penalties are : {top_4_penalties}')
@@ -136,85 +97,7 @@ def find_and_return_following_lines_and_target(
         else:
             found_data['primers'][f"Primer_{k}"] = {'PRIMER_LEFT':v[f"PRIMER_LEFT_{v['subprimer']}_SEQUENCE"],'PRIMER_RIGHT':v[f"PRIMER_RIGHT_{v['subprimer']}_SEQUENCE"],'PRIMER_INTERNAL':'NA'}
         found_data['data'][f"Data_primer_{k}"] = {header:value for header,value in v.items()}
-    # Iterate over each 'top_line' in 'top_lines'
-    # for top_line in top_lines:
-    #     # Join the elements of 'top_line' with an equals sign ('=') between them
-    #     joined_top_line = "=".join(top_line)
-        
-    #     # Check if 'qpcr' is equal to 'y' (yes) to determine the flow of processing
-    #     if qpcr == "y":
-    #         # Iterate over the 'lines' list and enumerate them to get both index and content
-    #         for i, line in enumerate(lines):
-    #             # If the 'joined_top_line' is found in the current line
-    #             if joined_top_line in line:
-    #                 # Retrieve the target sequence from 5 lines above the current one
-    #                 target_sequence = lines[i - 5].strip()
-    #                 # Extract primer sequences from lines 4 to 6 after the current line
-    #                 primer_sequences = [
-    #                     lines[i + j].strip() for j in range(4, 7) if i + j < len(lines)
-    #                 ]
-    #                 # Extract additional primer data from lines 7 to 29 after the current line
-    #                 primer_data = [
-    #                     lines[i + j].strip() for j in range(7, 30) if i + j < len(lines)
-    #                 ]
-    #                 # Store the found data in the 'found_data' dictionary with dynamic keys
-    #                 found_data[f"Target_{i}"] = target_sequence
-    #                 found_data[f"Primer_{i}"] = primer_sequences
-    #                 found_data[f"Data_primer_{i}"] = primer_data
-        # else:
-        #     # If 'qpcr' is not 'y', follow a different data extraction process that takes care of the 
-        #     # fact that internal probe is not part of primer3 output. Set to NA instead. 
-        #     for i, line in enumerate(lines):
-        #         # If the 'joined_top_line' is found in the current line
-        #         if joined_top_line in line:
-        #             # Retrieve the target sequence from 5 lines above the current one
-        #             target_sequence = lines[i - 5].strip()
-        #             # Extract primer sequences from lines 3 to 4 after the current line
-        #             primer_sequences = [
-        #                 lines[i + j].strip() for j in range(3, 5) if i + j < len(lines)
-        #             ]
-        #             # Append a placeholder for a missing primer sequence when 'qpcr' is not 'y'
-        #             primer_sequences.append("PRIMER_INTERNAL_0_SEQUENCE=NA")
-        #             # Extract additional primer data from lines 5 to 21 after the current line
-        #             primer_data = [
-        #                 lines[i + j].strip() for j in range(5, 22) if i + j < len(lines)
-        #             ]
-        #             # Store the found data in the 'found_data' dictionary with dynamic keys
-        #             found_data[f"Target_{i}"] = target_sequence
-        #             found_data[f"Primer_{i}"] = primer_sequences
-        #             found_data[f"Data_primer_{i}"] = primer_data
-
-    # Return the 'found_data' dictionary containing all the extracted information
     return found_data
-
-
-# def move_files(source_folder: Path, destination_folder: Path, pattern: str, logger: Logger) -> None:
-#     """
-#     Move files matching pattern from source_folder to destination_folder.
-
-#     Args:
-#         source_folder (Path): Path object containing the files that are supposed to be moved into the destination folder
-#         destination_folder (Path): Path object the files are supposed to be shifted to
-#         pattern (str): pattern to be matched to identify which files from the source folder go into the destination folder
-
-#     Returns:
-#         None
-#     """
-#     files = list(source_folder.glob(pattern)) 
-#     if not files:
-#         logger.exception(f"No files matching {pattern} found in {source_folder}")
-#         raise FileNotFoundError(f"No files matching {pattern} found in {source_folder}")
-
-#     for file in files:
-        # try:
-        #     shutil.move(file, destination_folder / file.name)
-        #     logger.info(f"Moved {file} to {destination_folder}")
-        # except FileNotFoundError as e:
-        #     logger.exception("Error moving files", exc_info=1)
-        #     raise FileNotFoundError(f"Error moving files: {e}") from e
-        # except OSError as e:
-        #     logger.exception(f"OS error during moving files with shutil.move: {e}")
-        #     raise OSError("OS error during shutil.move") from e
 
 def main():
     """
