@@ -269,40 +269,7 @@ def main():
         # Log the current key-value pair
         logger.info(f"{key}: {value}")
         
-    #     # Check if the current key is related to "Primer" by checking if the string "Primer" is in the key
-    #     is_primer = "Primer" in key
-        
-    #     # Define the name of the temporary file where the data will be written
-    #     temp_file = f"{args.outfile_prefix}{key}.txt"
-        
-        # Open the temporary file for writing with UTF-8 encoding
-        # with open(temp_file, "w", encoding="utf-8") as tf:
-        #     # If the current key is related to primer data
-        #     if is_primer:
-        #         # Iterate through each element in the value (which should be a list of primer data)
-        #         for element in value:
-        #             # Split the element by '=' and remove unnecessary whitespace around it
-        #             split_lines = re.split(r"\s*=\s*", element.strip())
-                    
-        #             # If the split results in at least two parts (a name and a sequence)
-        #             if len(split_lines) >= 2:
-        #                 # Write the primer data to the file in the format ">name\nsequence\n"
-        #                 tf.write(f">{split_lines[0]}\n{split_lines[1]}\n")
-            
-        #     # If the key contains "Data" (indicating it's data-related)
-        #     elif "Data" in key:
-        #         # Write all the data (joined with newlines) to the file
-        #         tf.write("\n".join(value))
-            
-        #     # For other cases (non-primer, non-data)
-        #     else:
-        #         # Split the value by '=' and remove whitespace
-        #         split_line = re.split(r"\s*=\s*", value.strip())
-                
-        #         # If the split results in at least two parts (a name and a sequence)
-        #         if len(split_line) >= 2:
-        #             # Write the name and sequence to the file in the format ">name\nsequence\n"
-        #             tf.write(f">{split_line[0]}\n{split_line[1]}\n")
+   
 
     # Define the paths for the destination folders where files will be moved
     destination_folder_pr = source_folder / "FUR.P3.PRIMERS"
