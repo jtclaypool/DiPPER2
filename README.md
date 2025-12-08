@@ -76,35 +76,10 @@ Seqkit, BLAST+ and primer3 can be installed via conda. primer3 can also be insta
 
 ## Installation
 
-To install the dependencies, please run the ```dependency_install.sh``` script. For both Linux and MacOS you can decide whether you want to install the entire pipeline (including ```FUR``` and ```Primer3```) or the standalone, primer-testing one.
-By default it will install the full pipeline (```-s n```). To install the standalone-pipeline, set ```-s y```.
+To install the dependencies, please run the `conda create -n dipper2 -f dipper2.yml`. This will install all but `fur` and `phylonium`. I would recommend following their respective installations here for (fur)[https://github.com/EvolBioInf/fur] and (phylonium)[https://github.com/EvolBioInf/phylonium]. 
 
-```Bash
-Usage: dependency_install.sh -m n -s n
-    Installation Script. Either installs the entire DiPPER2 pipeline dependencies or just dependencies of the standalone pipeline, which tests primers only.
-      -m <Is this a MacOS?> [y/n; default n]
-      -s <standalone or not?> [y/n; default n]
-```
-To install ```FUR``` successfully, this installation script might have to be run as sudo.
 
-__NOTE: the MacOS install of ```FUR``` will fail!__</br>
-Follow the following steps:
-1. check which of the following might already be installed:
-    - golang 
-    - libdivsufsort-dev 
-    - make
-    - phylonium
-    - homebrew
-2. Install homebrew if necessary first:
-```Bash
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)
-```
-3. Install all missing other packages using
-```Bash
-brew install <package>
-```
-
-Assuming all the required programs listed in Requirements are then installed and in path, DiPPER2 can be installed by cloning the repo:
+Assuming all the required programs listed in yml are then installed and in path, DiPPER2 can be installed by cloning the repo:
 ```Bash
 git clone https://github.com/ThWacker/DiPPER2.git
 ```
@@ -112,12 +87,16 @@ git clone https://github.com/ThWacker/DiPPER2.git
 
 ## Usage
 
-> __*PLEASE NOTE THAT CURRENTLY RELATIVE PATHS ARE NOT RESOLVED PROPERLY. USE ABSOLUTE PATHS. You might have to run ```conda activate``` first for all programs to be in PATH.*__
-
 ### Minimal usage (non-parallel):
 
+You'll need:
+
+- A folder of genomic assemblies
+- A list of target genome assemblies to design primers for (target_list.txt). These should be the names of the genome file in the genome assemblies folder
+- A list of genome assemblies to avoid as off-targets (outfile_list.txt). These should be the list of genomes in the assembly folder not on the target list. 
+
 ```Bash
-/repos/DiPPER2/scripts/DiPPER2_wrapper.sh -d <folder with the assemblies> -f <name of the results folder> -o <results files prefix> -q <toggle if qPCR primers are wanted or not, default n> -l <list of targets>
+DiPPER2/scripts/DiPPER2_wrapper.sh -d <folder with the assemblies> -f <name of the results folder> -o <outfile_list.txt> -q <toggle if qPCR primers are wanted or not, default n> -l <target_list.txt>
 ```
 
 #### Optional parameters:
@@ -190,21 +169,21 @@ If that turns out to be a problem, change the ```set_start_method("spawn")``` in
 
 
 - __within FUR.P3.PRIMERS:__ </br>
-    Primer fasta files (.txt ending, but fasta formatted). Primers are numbered. The number is the unique identity of the primer.
+    Primer fasta files (.fna ending). Primers are numbered based on Primer3 primer regions and subregions. The first number represents the region, and the second number a sub-region. The sub-regions may contain the same primer as other primers within the overall region.
 - __within FUR.P3.PRIMERS/primer_data:__</br>
     Here, textfiles with information about Tm, amplicon length, GC etc are found. These follow the Primer3 conventions, please compare here for explanation: ([https://primer3.org/manual.html#outputTags](https://primer3.org/manual.html#outputTags))
-- __within FUR.P3.PRIMERS/in_silico_tests__ </br>
+- __within in_silico_tests:__ </br>
     Here, the results of the in silico PCR tests, performed using seqkit locate, can be found. Files names with 'target' in the name are files used for sensitivity testing, running an in silico PCR against the concatenated targets.
     File names with 'neighbour' in the name are files used for specificity testing, running an in silico PCR against the concatenated neighbours. The 'm' in the name refers to the number of allowed mismatches in the primer
 - __within FUR.P3.TARGETS:__ </br>
     Here, we find target files with 'Target' in the name, followed by a number that matches the unique identifier of the primer pair, which are fasta files containing the target sequence.
-    Also, blastx results are found here. These are tab-separated and the headers of the blastx files are "qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore"
+    Also, blastx results are found here. These are tab-separated and the headers of the blastx files are "qseqid sseqid pident length mismatch gapopen qstart qend sstart send evalue bitscore" *current iteration has removed blastx*: this is because of the lack of efetch support. 
 
 ### Other information:
 
 All relevant information are found in the results files, which will give you an idea whether a primer passed or failed. Currently, the results files do not contain amplicon lengths or Tms etc, please refer to the txt files in the FUR.P3.PRIMERS/primer_data folder for that. 
 
-Up to 4 primers are picked, but sometimes less than 4 primers are generated by Primer3. Having less than 4 primers in the results does not mean the run/ pipeline did not complete.
+A minimum of 15 primers are picked (in my ongoing experience), but variations of this should not dictate whether or not the pipeline has failed. Please consult logs for how many primers were identified.
 
 Currently, the default target parameters for conventional primers are:</br> 
 ```primMinTm=58 primOptTm=60 primMaxTm=62 inMinTm=63 inOptTm=65 inMaxTm=67 prodMinSize=200 prodMaxSize=1000 Oligo=0```
@@ -217,9 +196,6 @@ This means that conventional primers have a target optimum Tm of 60 and a produc
 ## Future developments
 
 * FUR.target and FUR.neighbour assemblies are listed in target.txt and neighbour.txt and the folders are deleted
-* ~~A working wrapper for the parallelized primer testing~~ &check;
-* ~~A standalone pipeline that tests user provided primers (currently pre-release version in branch parallelize)~~&check;
-* optimized blastx strategy to account for Ns in FURs output
 * packaging for PyPi
 * Docker containerization and conda packaging
 * extension of testing suite, refactoring to pytest
