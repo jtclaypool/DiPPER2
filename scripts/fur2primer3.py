@@ -23,7 +23,10 @@ def remap_keys(params: dict)->dict:
 		"PRIMER_MAX_TM": params.get("primMaxTm","62"),
 		"PRIMER_INTERNAL_MIN_TM": params.get("inMinTm","63"),
 		"PRIMER_INTERNAL_OPT_TM": params.get("inOptTm", "65"),
-		"PRIMER_INTERNAL_MAX_TM": params.get("inMaxTm","67")
+		"PRIMER_INTERNAL_MAX_TM": params.get("inMaxTm","67"),
+        "PRIMER_MAX_END_GC": "1",
+        "PRIMER_MIN_GC": "35.0",
+        "PRIMER_MAX_GC": "65.0"
     }  
 
 def write_result(file:Path, params:dict):
